@@ -1,0 +1,124 @@
+{
+  "id": "abdullahformuli",
+  "template": "isnail-30",
+  "theme": "x-desktop",
+  "language": "en",
+  "format": {
+    "fps": 30,
+    "bpm": 128,
+    "duration": 30,
+    "size": [
+      1920,
+      1080
+    ]
+  },
+  "type": {
+    "heavy": [
+      {
+        "family": "Helvetica Neue",
+        "style": "Heavy"
+      },
+      {
+        "family": "Arial",
+        "style": "Bold"
+      }
+    ],
+    "latin": [
+      {
+        "family": "Helvetica Neue",
+        "style": "Bold"
+      },
+      {
+        "family": "Inter",
+        "style": "Bold"
+      }
+    ],
+    "why": "Clean modernist tech-editorial typography: bold grotesque headers matching X desktop profile cards, high-contrast monospace numeral readouts."
+  },
+  "output": "out/abdullahformuli-intro.mp4",
+  "toy": "toy.json",
+  "recipes": [
+    "cover-wall.py",
+    "@sticker2d",
+    "@shape",
+    "@avatar"
+  ],
+  "profile": {
+    "name": "Abdullah Formuli",
+    "nameEmoji": "⚡",
+    "handle": "abdullahformuli",
+    "verified": true,
+    "postsCount": "550+ Posts",
+    "bio": [
+      "Shipping until I Land SWE or YC",
+      "Full-stack AI builder · Multi-Agent systems",
+      "55 consecutive days of public open-source shipping"
+    ],
+    "meta": {
+      "topic": "AI Agents, Systems Engineering",
+      "link": "github.com/authrain-cloud-abdullahformuli",
+      "joined": "Joined 2026"
+    },
+    "following": "320",
+    "followers": "12.4K",
+    "avatar": "assets/avatar-real.jpg",
+    "banner": "assets/banner-real.jpg"
+  },
+  "posts": {
+    "pinned": {
+      "date": "Nov 5",
+      "title": "Day 54 of shipping until I Land SWE or YC: Open-sourced scroll-craft, agent skill for scroll-driven sites",
+      "counts": [
+        "245",
+        "890",
+        "4,120",
+        "150K"
+      ],
+      "cover": "assets/pinned-cover.jpg"
+    },
+    "retro": {
+      "date": "Sep 15",
+      "title": "Built career-ops: evaluated 740+ offers, 100+ tailored CVs with autonomous agent loops",
+      "counts": [
+        "180",
+        "520",
+        "3,400",
+        "98K"
+      ]
+    }
+  },
+  "counter": {
+    "value": 55,
+    "unit": "Days",
+    "label": "Shipped"
+  },
+  "cta": {
+    "slogan": [
+      {
+        "text": "Ship Daily",
+        "paper": "slate",
+        "em": 0.1,
+        "at": [
+          -0.34,
+          0.065,
+          -0.06
+        ],
+        "tilt": -0.012
+      },
+      {
+        "text": "Land SWE or YC",
+        "paper": "cyan",
+        "em": 0.1,
+        "at": [
+          0.12,
+          0.07,
+          -0.058
+        ],
+        "tilt": 0.02
+      }
+    ],
+    "handle": "@abdullahformuli",
+    "website": "github.com/authrain-cloud-abdullahformuli",
+    "qr": false
+  }
+}

@@ -1,0 +1,165 @@
+"""Glyph outlines for the 3D lettering, flattened to polygons: the counter's
+digits, unit and label (act 2) and the call to action's torn-paper labels.
+Each role takes the face the film chose (film.json "type", engine/lib/fonts.py:
+no face is the skill's own) and its characters from film.json (the beats' words,
+and "glyphs": whatever a film's own template adds, by face). A film with no face
+chosen, or a character its face does not have, stops the build here, before
+anything renders.
+Rings are in em units (y up, baseline 0); Blender extrudes them as curves.
+
+usage: FILM=<film folder> python3 engine/scripts/glyphs.py   → build/glyphs.json
+"""
+import json
+import math
+import sys
+from pathlib import Path
+
+from fontTools.pens.basePen import BasePen
+from fontTools.ttLib import TTFont
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "lib"))
+from film import FILM, FILM_JSON  # noqa: E402  the film workspace (FILM env var)
+from fonts import face  # noqa: E402
+
+ROOT = FILM
+F = FILM_JSON
+from fonts import chosen  # noqa: E402
+
+prefs = chosen(F.get("type"))
+if "heavy" not in prefs:
+    raise SystemExit('film.json "type": choose the film\'s faces first, and say why (run.mjs fonts lists the faces '
+                     'here that have every character it shows; run.mjs typesheet sets its lines in them at phone size '
+                     'and reads them back; references/beats.md, "Choosing the faces")')
+if not str((F.get("type") or {}).get("why", "")).strip():
+    raise SystemExit('film.json "type": say why these faces ("why": their covers use it, its strokes stay open at the '
+                     'size the lines stand, …): the story page shows it')
+cta = F["cta"]
+CHARS = {
+    "latin": "0123456789",  # the counter's digits
+    "cjk": F["counter"]["unit"] + F["counter"]["label"],
+    "heavy": "".join(p["text"] for p in [*cta["slogan"], cta["name"], cta.get("handle") or {"text": ""}]),
+}
+# a count written as the platform writes it (6.5万, 7,253, 46K, a label like "star"): its latin
+# characters in the digits' face, the rest in the unit's
+_ctr = F["counter"]
+for _c in dict.fromkeys(str(_ctr.get("display", "")) + _ctr["label"]):
+    if _c.isspace():
+        continue
+    _role = "latin" if ord(_c) < 0x2E80 else "cjk"
+    if _c not in CHARS[_role]:
+        CHARS[_role] += _c
+# the beats' own lettering, in the end card's face: every word in a beat's entry
+# (film.json story.segments: its text, label, stamp…), and the digits, signs and date
+# words a count or a calendar runs through
+def words(v):
+    if isinstance(v, str):
+        return "" if v.startswith("#") else v  # not a colour
+    if isinstance(v, list):
+        return "".join(words(x) for x in v)
+    if isinstance(v, dict):
+        return "".join(words(x) for x in v.values())
+    return ""
+
+
+BEATS = [s for s in F.get("story", {}).get("segments", []) if "beat" in s]
+CHARS["display"] = ""  # and in the creator's own face, for a beat that sets its line in it (fonts.py "display")
+for s in BEATS:
+    CHARS["heavy"] += words({k: v for k, v in s.items() if k != "beat"})
+    CHARS["display"] += words({k: v for k, v in s.items() if k != "beat"})
+if BEATS:
+    CHARS["heavy"] += "0123456789,.+%月日"
+# what the end card's prop carves (film.json cta.prop.text: a plinth's line, a trophy's name)
+CHARS["heavy"] += words((cta.get("prop") or {}).get("text", ""))
+CHARS["display"] += words((cta.get("prop") or {}).get("text", ""))
+# what a film's own template or scene shows beyond these: film.json "glyphs" adds characters
+# to a face ({"latin": ",", "heavy": "官方认证"}: a count written 10,000, a film-local scene's words)
+for role, chars in F.get("glyphs", {}).items():
+    if role not in CHARS:
+        raise SystemExit(f'film.json "glyphs": no face "{role}" (the faces: {", ".join(CHARS)})')
+    CHARS[role] += chars
+FONTS = {}
+for role, chars in CHARS.items():
+    path, index, name = face(role, prefs.get(role, ()), [str(FILM / "fonts")], prefs)
+    FONTS[role] = (path, index, chars)
+    print(f"{role:6s} {name}  ({Path(path).name} #{index})")
+
+
+COS_NEEDLE = math.cos(math.radians(4))
+
+
+def unspike(ring):
+    """A ring without its needles: an outline that runs out and back on itself under 4 degrees wide (Lantinghei
+    Heavy's 格 has one, 0.58 degrees), which a bevel turns into a long thin line shooting out of the letter; and
+    without a point repeated. A needle is many points thin, so its tip goes again and again until none is left."""
+    pts = [p for i, p in enumerate(ring) if i == 0 or p != ring[i - 1]]
+    if len(pts) > 1 and pts[0] == pts[-1]:
+        pts = pts[:-1]
+    was = -1
+    while len(pts) != was and len(pts) >= 3:
+        was = len(pts)
+        keep = []
+        for i, b in enumerate(pts):
+            a, c = pts[i - 1], pts[(i + 1) % len(pts)]
+            v1, v2 = (a[0] - b[0], a[1] - b[1]), (c[0] - b[0], c[1] - b[1])
+            l1, l2 = math.hypot(*v1), math.hypot(*v2)
+            if l1 > 1e-9 and l2 > 1e-9 and (v1[0] * v2[0] + v1[1] * v2[1]) / (l1 * l2) < COS_NEEDLE:
+                keep.append(b)
+        pts = keep
+    return pts
+
+
+class Flatten(BasePen):
+    def __init__(self, glyphset, steps=10):
+        super().__init__(glyphset)
+        self.rings, self.cur, self.steps = [], [], steps
+
+    def _moveTo(self, p):
+        self.cur = [p]
+
+    def _lineTo(self, p):
+        self.cur.append(p)
+
+    def _curveToOne(self, p1, p2, p3):
+        p0 = self.cur[-1]
+        for i in range(1, self.steps + 1):
+            t = i / self.steps
+            a, b, c, d = (1 - t) ** 3, 3 * (1 - t) ** 2 * t, 3 * (1 - t) * t * t, t ** 3
+            self.cur.append((a * p0[0] + b * p1[0] + c * p2[0] + d * p3[0], a * p0[1] + b * p1[1] + c * p2[1] + d * p3[1]))
+
+    def _qCurveToOne(self, p1, p2):
+        p0 = self.cur[-1]
+        for i in range(1, self.steps + 1):
+            t = i / self.steps
+            a, b, c = (1 - t) ** 2, 2 * (1 - t) * t, t * t
+            self.cur.append((a * p0[0] + b * p1[0] + c * p2[0], a * p0[1] + b * p1[1] + c * p2[1]))
+
+    def _closePath(self):
+        ring = unspike(self.cur)
+        if len(ring) >= 3:
+            self.rings.append(ring)
+        self.cur = []
+
+    _endPath = _closePath
+
+
+out = {}
+for key, (path, index, chars) in FONTS.items():
+    font = TTFont(path, fontNumber=index)
+    upm = font["head"].unitsPerEm
+    cmap = font.getBestCmap()
+    gs = font.getGlyphSet()
+    hmtx = font["hmtx"]
+    missing = sorted({ch for ch in chars if ord(ch) not in cmap})
+    if missing and key != "display":  # the creator's own face may lack a sign: the beat takes the heavy face's
+        raise SystemExit(f"{key}: {Path(path).name} has no glyph for {' '.join(missing)}")
+    for ch in sorted(set(chars) - set(missing)):
+        name = cmap[ord(ch)]
+        pen = Flatten(gs)
+        gs[name].draw(pen)
+        out[f"{key}:{ch}"] = {
+            "advance": round(hmtx[name][0] / upm, 5),
+            "rings": [[[round(x / upm, 5), round(y / upm, 5)] for x, y in r] for r in pen.rings],
+        }
+(ROOT / "build").mkdir(exist_ok=True)
+(ROOT / "build/glyphs.json").write_text(json.dumps(out))
+print(len(out), "glyphs ->", ROOT / "build/glyphs.json")

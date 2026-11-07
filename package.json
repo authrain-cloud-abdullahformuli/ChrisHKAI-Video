@@ -1,0 +1,25 @@
+{
+  "name": "chrishkai-video",
+  "version": "0.7.0",
+  "description": "Video skill for coding agents: paste a creator's X link, get a short film starring them as a 3D vinyl toy.",
+  "type": "module",
+  "scripts": {
+    "test": "node test.mjs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/authrain-cloud-abdullahformuli/ChrisHKAI-Video.git"
+  },
+  "keywords": [
+    "video-skill",
+    "blender",
+    "3d-animation",
+    "cycles",
+    "creator-intro",
+    "claude-code-plugin",
+    "codex-skill",
+    "python"
+  ],
+  "author": "Abdullah Formuli <authrainmedia@gmail.com>",
+  "license": "MIT"
+}

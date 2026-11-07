@@ -1,0 +1,230 @@
+// Step 2's end: puts the research and the user's picks into film.json.
+// The picks are the creator's story (facts.json "story": the things picked, in
+// order, each with the animation it becomes), the opening and the ending:
+// they become film.json story.segments, so the film is built from what the
+// user chose, not from isnail's story whole. The profile and its numbers go
+// to "profile", the posts the page shows to "posts" (the pinned post, the one
+// that rises), the number that rises from the page to "counter", the name,
+// handle and line to the end card, the pictures the user confirmed for the toy
+// to "toyFrom". Numbers stay as the platform writes them. "step" moves on to
+// the toy.
+//
+// usage: node engine/scripts/apply-research.mjs <film folder> [--dry-run]
+// reads research/facts.json:
+//   "picks": { "direction": "method" } (its beats, opening and ending), or
+//   "picks": { "story": ["s2", { "id": "s1", "idea": 1 }, { "id": "s3", "anim": "calendar" }],
+//              "opening": "page-stand-left", "cta": { "slogan": [...], "prop": "…" } }
+//   (research from before the story: "picks": { "proof1": { post, number }, "proof2": { post }, "cta": … })
+//   "toy": { "images", "confirmed" }
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { dirname, join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+import { homedir } from "node:os";
+import { CAT, optsIssues, segmentOf } from "../lib/catalog.js";
+import { readNumber } from "../lib/numbers.js";
+import { resolveDirection } from "../lib/research.js";
+import { storyTestIssues } from "../lib/story-test.js";
+
+const SKILL = join(dirname(fileURLToPath(import.meta.url)), "../..");
+const argv = process.argv.slice(2);
+const dir = resolve(argv.find((a) => !a.startsWith("--")) ?? process.env.FILM ?? ".");
+const film = JSON.parse(readFileSync(join(dir, "film.json"), "utf8"));
+const facts = JSON.parse(readFileSync(join(dir, "research/facts.json"), "utf8"));
+const fail = (msg) => { console.error(msg); process.exit(1); };
+const warn = [];
+
+const picks = facts.picks ?? fail("research/facts.json has no \"picks\" yet: the user picks from the material page first");
+let selection;
+try { selection = resolveDirection(facts); } catch (e) { fail(e.message); }
+// the toy is only made from a picture the user said to use: many profile pictures are real people
+if (!facts.toy?.confirmed || !facts.toy.images?.length) fail("the toy's picture is not confirmed yet: show the user the profile picture and ask which picture the toy is made from (research/facts.json \"toy\")");
+// the story test is advice, not a gate (references/story-test.md): what it still asks for is said here,
+// and the film goes on; the full render waits for the storyboard page and the user's sign-off
+warn.push(...selection.warnings);
+if (selection.direction) {
+  let report = null;
+  try { report = JSON.parse(readFileSync(join(dir, "research/story-test.json"), "utf8")); } catch { /* none yet */ }
+  warn.push(...storyTestIssues(facts, report).map((issue) => `story test: ${issue}`));
+}
+// a company may have no posts worth a page (references/research.md, "A company or a brand"): its film then shows
+// none, and the template's page gets a blank one it never plays
+facts.posts = facts.posts ?? [];
+const noPosts = !facts.posts.length;
+const BLANK = { id: "none", title: "", numbers: {} };
+const post = (id) => facts.posts.find((p) => p.id === id) ?? fail(`no post "${id}" in research/facts.json`);
+// the stage platform's own grid shows one number per tile
+const stage = film.theme.split("-")[0];
+const TILE = { douyin: "likes", xhs: "likes", channels: "likes", ig: "views", x: "views" }[stage] ?? "views";
+const show = (p, k) => p.numbers?.[k]?.display;
+
+// ── the story the user picked → segments ────────────────────────────────────
+// each pick: a story point's id (its first idea, or the one the direction's beat names), { id, idea } (an idea
+// by its place in "becomes") or { id, anim } (the idea with that animation)
+const story = facts.story ?? [];
+const ideaOf = (id) => selection.direction?.beats?.find((b) => b.story === id)?.idea ?? 0;
+const picked = selection.story.map((x) => {
+  const id = typeof x === "string" ? x : x.id;
+  const s = story.find((q) => q.id === id) ?? fail(`picks.story names "${id}", which research/facts.json "story" does not have`);
+  const b = (typeof x === "object" && Number.isInteger(x.idea) ? s.becomes?.[x.idea] ?? fail(`picks.story: story point "${id}" has no idea ${x.idea} (it has ${s.becomes?.length ?? 0})`)
+    : typeof x === "object" && x.anim ? s.becomes?.find((y) => y.anim === x.anim) ?? { anim: x.anim }
+    : s.becomes?.[ideaOf(id)]) ?? fail(`story point "${id}" says nothing it becomes ("becomes")`);
+  // designed from the material first (references/research.md): a point with no idea of the film's own was not
+  if (selection.direction && !(s.becomes ?? []).some((y) => y.anim === "own")) warn.push(`story point "${id}" has no idea of the film's own: it was matched to a ready-made animation without one designed from its material (references/research.md, "The story first")`);
+  return { s, b };
+});
+// the old way: the two proofs are acts 2 and 3 of isnail's story
+const legacy = !picked.length && picks.proof1;
+const usesAct2 = legacy || picked.some(({ b }) => b.anim === "act2");
+const act2Pick = picked.find(({ b }) => b.anim === "act2");
+const act3Pick = picked.find(({ b }) => b.anim === "act3");
+
+// the posts the page shows: the one whose number rises (act 2, else the pinned one, else the first the story names),
+// and the one that rises below it (act 3's, else the next)
+const storyPosts = picked.flatMap(({ s }) => s.posts ?? []);
+const firstId = legacy ? picks.proof1.post : act2Pick?.b.opts?.post ?? act2Pick?.s.posts?.[0] ?? facts.posts.find((p) => p.pinned && !p.sponsored)?.id ?? storyPosts[0] ?? facts.posts.find((p) => !p.sponsored)?.id ?? facts.posts[0]?.id;
+const p1 = noPosts ? BLANK : post(firstId ?? fail("the research found no post: the page needs one"));
+const secondId = legacy ? picks.proof2.post : act3Pick?.b.opts?.post ?? act3Pick?.s.posts?.[0] ?? [...storyPosts, ...facts.posts.filter((p) => !p.sponsored).map((p) => p.id)].find((id) => id !== p1.id);
+const p2 = !noPosts && secondId ? post(secondId) : p1;
+
+function asPost(p) {
+  return Object.fromEntries(Object.entries({
+    date: p.date,
+    title: p.title,
+    counts: ["replies", "reposts", "likes", "views"].map((k) => show(p, k) ?? ""),
+    count: show(p, TILE),
+    cover: p.cover,
+    // how X shows it: an article (the default), a video, a picture post; "已置顶" only on a pinned one
+    ...(p.kind && p.kind !== "article" ? { kind: p.kind } : {}),
+    ...(p.pinned === false || (p.pinned === undefined && p !== facts.posts.find((q) => q.pinned)) ? { pinned: false } : {}),
+  }).filter(([, v]) => v !== undefined && v !== ""));
+}
+
+// the profile: its own fields, then each number as the page writes it
+const pr = facts.profile;
+const profile = { name: pr.name, handle: pr.handle, bio: pr.bio ?? [], avatar: pr.avatar, banner: pr.banner, ...(pr.fields ?? {}) };
+for (const [k, v] of Object.entries(pr.numbers ?? {})) profile[k] = v.display;
+// X writes the count with its word under the name ("3.5万 帖子")
+if (stage === "x" && pr.numbers?.posts) { profile.postsCount = `${pr.numbers.posts.display} ${pr.numbers.posts.label}`; delete profile.posts; }
+for (const k of Object.keys(profile)) if (profile[k] === undefined) delete profile[k];
+
+// the counter: the number that rises from the first post's spot on the page, as the platform writes it
+const numberKey = legacy ? picks.proof1.number : act2Pick?.b.opts?.number ?? act2Pick?.b.number ?? (act2Pick?.s.numbers?.[0] && Object.keys(p1.numbers ?? {}).find((k) => p1.numbers[k].display === act2Pick.s.numbers[0].display)) ?? TILE;
+const n1 = p1.numbers?.[numberKey] ?? Object.values(p1.numbers ?? {})[0] ?? (usesAct2 ? fail(`post "${p1.id}" has no number "${numberKey}"`) : { display: "0", label: "" });
+const c = readNumber(n1.display) ?? fail(`can't read "${n1.display}" as a number: write it as the platform does (304万, 6.5万, 7,253, 46K)`);
+// it counts up as the platform writes it (6.5万, 7,253, 46K): a long label only crowds the page
+if (usesAct2 && [...(n1.label ?? "")].length > 6) warn.push(`the counter's label "${n1.label}" is long for the spot under the post: a shorter word, as the app writes it, reads better`);
+
+// the opening: chosen by the story, never a menu (references/story-directions.md). The page floating ends with the
+// toy on the pinned post, ready for its number to rise; the page standing up ends with the toy out in front, ready
+// for any beat, on the side the films delivered so far (the skill's own and this machine's) used less
+function delivered() {
+  const read = (p) => { try { return JSON.parse(readFileSync(p, "utf8")); } catch { return []; } };
+  return [...read(join(SKILL, "engine/lib/ledger-base.json")), ...read(join(process.env.CHRISHKAI_VIDEO_HOME ?? join(homedir(), ".chrishkai-video"), "ledger.json"))];
+}
+const firstAnim = picked[0]?.b.anim;
+let opening = picks.opening ?? selection.direction?.opening?.id;
+if (!legacy && !opening) {
+  if (firstAnim === "act2") opening = "opening";
+  else {
+    const used = { "page-stand": 0, "page-stand-left": 0 };
+    for (const f of delivered()) if (f.opening in used) used[f.opening]++;
+    opening = Object.entries(used).sort((a, b) => a[1] - b[1])[0][0];
+  }
+  if (selection.direction) warn.push(`the direction names no opening: took "${opening}", which hands over to its first point; write it as direction.opening { id, why } so the story page says so`);
+}
+// with no posts, nothing may show the page: not its number rising, its cover wall, or the template's openings on it
+if (noPosts && (usesAct2 || act3Pick || (!legacy && opening !== "own"))) fail(`research/facts.json has no posts, but the film ${usesAct2 ? "raises a number from one (act2)" : act3Pick ? "stands a cover up as a wall (act3)" : `opens on their page ("${opening}")`}: give it their work as posts (a case study, its title and picture), or an opening of the film's own (direction.opening { "id": "own" }: references/research.md, "A company or a brand")`);
+if (p1.sponsored) warn.push(`the page's first post, "${p1.title}", is a paid partnership (X marks it): the film would feature an ad${opening === "opening" ? ", and the page floating ends the toy on it" : ""}; give the point another post, unless the user wants this one`);
+if (!legacy && opening === "opening" && firstAnim && firstAnim !== "act2") warn.push(`the opening with the page floating ends with the toy on the pinned post, ready for its number to rise, but the first point here is "${firstAnim}": an opening that stands the page up (page-stand, page-stand-left) hands over to it`);
+// an idea's opts are this creator's: one the animation needs and lacks would leave the catalog's example (another
+// film's number, its line) on screen
+const segOf = (id, opts = {}) => {
+  const issues = optsIssues(id, opts);
+  const missing = issues.find((x) => / needs /.test(x));
+  if (missing) fail(`${missing} (beats/catalog.json "takes"; references/research.md, "The story first")`);
+  warn.push(...issues);
+  return segmentOf(id, opts);
+};
+let segments = film.story?.segments;
+let act3Then = false; // act 3 with a beat after it: its exit plays a bar, and the toy leaps (references/exits.md)
+if (!legacy) {
+  // an opening of the film's own (direction.opening { id: "own", beat, pitch, sketch }): a beat written for this film
+  const ownOpening = () => {
+    const o = selection.direction?.opening?.id === "own" ? selection.direction.opening : {};
+    const beat = o.beat ?? "beats/opening.js";
+    if (!existsSync(join(dir, beat))) warn.push(`the film opens with an opening of its own: write ${beat} before the story step: it starts on their page and brings the toy out of their picture (references/beats.md)`);
+    return { beat, bars: o.bars ?? 2 };
+  };
+  segments = [opening === "own" ? ownOpening() : segOf(opening) ?? fail(`unknown opening "${opening}": one of ${CAT.filter((a) => a.group === "opening").map((a) => a.id).join(", ")}, or "own" (one written for this film)`)];
+  // why each part is there, for the storyboard page: what the viewer learns from it (the direction's action.means)
+  const whyOf = (id) => { const m = selection.direction?.beats?.find((x) => x.story === id)?.action?.means; return m ? { why: m } : {}; };
+  for (const [k, { s, b }] of picked.entries()) {
+    if (b.anim === "own") {
+      // an animation written for this film (references/beats.md, "A beat of your own")
+      segments.push({ beat: b.beat ?? `beats/${s.id}.js`, bars: b.bars ?? 3, ...(b.opts ?? {}), ...whyOf(s.id) });
+      if (!existsSync(join(dir, b.beat ?? `beats/${s.id}.js`))) warn.push(`"${s.line}" becomes an animation of its own: write ${b.beat ?? `beats/${s.id}.js`} before the story step (references/beats.md)`);
+      continue;
+    }
+    const seg = segOf(b.anim, b.opts) ?? fail(`story point "${s.id}" becomes "${b.anim}", which beats/catalog.json does not have (or "own" for one written for this film)`);
+    segments.push({ ...seg, ...whyOf(s.id) });
+    // act 3 hands over to the end card through its exit (the toy becomes the drawing of itself, or leaps); to a beat
+    // after it, through a bar of it: the leap, not 4 s squared up on the cover the viewer has just read
+    if (b.anim === "act3" && k === picked.length - 1) segments.push({ story: "exit" });
+    else if (b.anim === "act3") {
+      const tpl0 = JSON.parse(readFileSync(join(/^\.|[\\/]/.test(film.template ?? "isnail-30") ? resolve(dir, film.template) : join(SKILL, "templates", film.template ?? "isnail-30"), "story.json"), "utf8"));
+      const [x0] = tpl0.pieces.exit, bar1 = (60 / (film.format?.bpm ?? 120)) * 4;
+      segments.push({ story: [x0, x0 + bar1] });
+      act3Then = true;
+    }
+  }
+  // the end card's hits sit on the story's downbeats: after pieces that add up to whole bars it starts on the
+  // downbeat before its cut (the story's own end card starts 0.383 s after one, where act 3 leaves it)
+  const tpl = film.template ?? "isnail-30";
+  const STORY = JSON.parse(readFileSync(join(/^\.|[\\/]/.test(tpl) ? resolve(dir, tpl) : join(SKILL, "templates", tpl), "story.json"), "utf8"));
+  const bar = (60 / (film.format?.bpm ?? 120)) * 4;
+  const lenOf = (g) => (g.beat ? g.len ?? g.bars * bar : (([a, b]) => b - a)((typeof g.story === "string" ? STORY.pieces[g.story] : g.story).map((v) => (v === "end" ? STORY.duration : v))));
+  const before = segments.reduce((t, g) => t + lenOf(g), 0);
+  const [e0] = STORY.pieces.endCard;
+  const off = (((before - e0) % bar) + bar) % bar;
+  segments.push(off < 1e-3 || bar - off < 1e-3 ? { story: "endCard" } : { story: [Math.floor(e0 / bar) * bar, "end"] });
+}
+// a beat right before the end card: the toy drops onto the prop from above
+const beforeEnd = segments?.[segments.length - 2];
+const exit = !legacy && ((beforeEnd && !beforeEnd.story) || act3Then) ? "jump" : film.story?.exit;
+
+const others = facts.posts.filter((p) => p !== p1 && p !== p2 && p.cover);
+const ending = picks.cta ?? selection.direction?.cta;
+const slogan = ending?.slogan ?? fail("picks.cta.slogan is missing (one or two short parts)");
+const next = {
+  ...film,
+  profile,
+  posts: { pinned: asPost(p1), retro: asPost(p2) },
+  counter: { value: c.count, unit: c.unit, label: n1.label, display: n1.display },
+  ...(others.length ? { grid: others.map((p) => ({ cover: p.cover, ...(show(p, TILE) ? { count: show(p, TILE) } : {}) })) } : {}),
+  cta: {
+    ...(film.cta ?? {}),
+    // the prop idea the user picked with the closing line; the agent builds it (references/props.md)
+    ...(ending.prop ? { prop: { ...(film.cta?.prop ?? {}), idea: ending.prop } } : {}),
+    slogan: slogan.map((text, k) => ({ text, paper: k % 2 ? "red" : "cream" })),
+    name: { text: pr.name, paper: "cream" },
+    // their handle under the name; none when they have none, or the ending says so (a company that wants its name
+    // and its line alone: "handle": false), never the name twice
+    handle: { text: pr.handle && ending.handle !== false ? `@${pr.handle}` : "", paper: "blue" },
+  },
+  ...(legacy ? (film.story?.direction ? { story: { ...film.story, direction: null } } : {}) : { story: { ...(film.story ?? {}), segments, direction: selection.direction, ...(exit ? { exit } : {}) } }),
+  // what the user wants kept out of the film (a number, a name, a picture): check holds every word on screen to it
+  ...(picks.avoid?.length ? { avoid: picks.avoid } : {}),
+  toyFrom: facts.toy.images,
+  // a company (facts.json kind): its picture is its logo, its page its website (references/research.md)
+  ...(facts.kind ? { kind: facts.kind } : {}),
+  source: { ...(film.source ?? {}), read: facts.read },
+  // the toy, unless it is approved already (step story or later): the changed story then needs a new storyboard
+  step: ["story", "render", "done"].includes(film.step) ? "story" : "toy",
+};
+if (argv.includes("--dry-run")) console.log(JSON.stringify(next, null, 2));
+else {
+  writeFileSync(join(dir, "film.json"), JSON.stringify(next, null, 2) + "\n");
+  const shape = legacy ? "isnail's story" : segments.map((s) => s.beat ? `${s.beat}${s.turn === "left" ? " (left)" : ""}` : s.story).join(" → ");
+  console.log(`film.json: ${shape}; ${noPosts ? "no posts (the page is never shown)" : `the page shows #${facts.posts.indexOf(p1) + 1} and #${facts.posts.indexOf(p2) + 1}, counter ${n1.display} ${n1.label}, ${others.length} grid tiles`}, end card; next step: ${next.step === "story" ? "the storyboard (the toy is approved; the story changed)" : "the toy"}`);
+}
+for (const w of warn) console.log(`! ${w}`);

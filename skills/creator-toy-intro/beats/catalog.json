@@ -1,0 +1,252 @@
+{
+ "_about": "Parts to build from, not a menu. Step 2 designs each point's animation from its material first (references/research.md: what is special about the material, and an idea of the film's own, with a sketch); one of these is an idea only when it is the best way to show that point, or the start of the film's own. Each one: what it fits (the user reads this), what it needs, a film that used it, a preview strip cut from that film (beats/previews/<id>.jpg), how it goes into film.json (`film`) and what an idea gives it (`takes`: the `opts` it needs and may have). The values `film` has for those are that film's example, never another film's words: apply-research takes them from the idea's `opts` only. group: opening, middle or ending (a film is one opening, a few middles, one ending; the opening is chosen by the story: it hands over to the first point). kind: story (a piece of the template's story) or beat (beats/<id>.js, its own clock).",
+ "animations": [
+  {
+   "id": "opening",
+   "group": "opening",
+   "kind": "story",
+   "label": {
+    "zh-Hant": "開場：主頁浮喺半空，頭像好似貼紙咁撕起，變成公仔",
+    "zh-Hans": "开场：主页浮在半空，头像像贴纸一样撕起来，变成公仔",
+    "en": "Opening: the page floats in the air; the picture peels off like a sticker and becomes the toy"
+   },
+   "fits": {
+    "zh-Hant": "佢嘅主頁浮喺半空，頭像好似貼紙咁撕起，彈出變公仔",
+    "zh-Hans": "主页浮在半空，头像像贴纸一样撕起，弹出变公仔",
+    "en": "Their page floats as glass; the picture peels off like a sticker and pops into the toy"
+   },
+   "needs": "the profile page and picture (always there)",
+   "example": "isnail: 0–6 s",
+   "film": {
+    "story": "opening"
+   },
+   "preview": "beats/previews/opening.jpg"
+  },
+  {
+   "id": "page-stand",
+   "group": "opening",
+   "kind": "beat",
+   "label": {
+    "zh-Hant": "開場：主頁好似螢幕咁平放，向右轉身企起，頭像鼓起變成公仔",
+    "zh-Hans": "开场：主页像屏幕一样平放，向右转身立起，头像鼓起变成公仔",
+    "en": "Opening: the page lies flat like a screen, turns right and stands up; the picture puffs out into the toy"
+   },
+   "fits": {
+    "zh-Hant": "主頁好似螢幕咁平放，轉身拆開做企起嘅板，頭像鼓起變公仔",
+    "zh-Hans": "主页像屏幕一样平放，转身拆开成立起的板，头像鼓起变公仔",
+    "en": "The page lies flat like a screen, turns and parts into standing slabs; the picture puffs out into the toy"
+   },
+   "needs": "the profile page and picture",
+   "example": "kingao (Kin): the opening",
+   "film": {
+    "beat": "page-stand",
+    "bars": 2,
+    "turn": "right"
+   },
+   "preview": "beats/previews/page-stand.jpg"
+  },
+  {
+   "id": "page-stand-left",
+   "group": "opening",
+   "kind": "beat",
+   "label": {
+    "zh-Hant": "開場：主頁好似螢幕咁平放，向左轉身企起，頭像鼓起變成公仔",
+    "zh-Hans": "开场：主页像屏幕一样平放，向左转身立起，头像鼓起变成公仔",
+    "en": "Opening: the page lies flat like a screen, turns left and stands up; the picture puffs out into the toy"
+   },
+   "fits": {
+    "zh-Hant": "主頁好似螢幕咁平放，轉身拆開做企起嘅板，頭像鼓起變公仔",
+    "zh-Hans": "主页像屏幕一样平放，转身拆开成立起的板，头像鼓起变公仔",
+    "en": "The page lies flat like a screen, turns and parts into standing slabs; the picture puffs out into the toy"
+   },
+   "needs": "the profile page and picture",
+   "example": "cgnot996 (铁柱AGI): the opening",
+   "film": {
+    "beat": "page-stand",
+    "bars": 2,
+    "turn": "left"
+   },
+   "preview": "beats/previews/page-stand-left.jpg"
+  },
+  {
+   "id": "own",
+   "group": "middle",
+   "kind": "beat",
+   "label": {
+    "zh-Hant": "呢條片自己嘅動畫：由佢嘅素材出發設計",
+    "zh-Hans": "这条片自己的动画：从创作者的素材出发设计",
+    "en": "The film's own animation, designed from their material"
+   },
+   "fits": {
+    "zh-Hant": "每一點都先由佢嘅素材諗：素材有乜係只得佢先有（數量、規模、前後對比、佢自己嘅風格同字體、本身識郁嘅嘢、一個過程、一把聲、佢嘅笑位），動畫就用嗰樣。例如一年嘅每日一畫翻成一段動畫",
+    "zh-Hans": "每一点都先从创作者的素材想：素材有什么是只有它才有的（数量、规模、前后对比、自己的风格和字体、本身会动的东西、一个过程、一个声音、他的笑点），动画就用那一样。例如一年的每日一画翻成一段动画",
+    "en": "Every point starts from its material: what only it has (its quantity, scale, a before and after, their own style and type, a motion it already has, a process, a sound, their humour), and the animation uses that. Say, a year of daily drawings flipped into one animation"
+   },
+   "needs": "the material, its sketch on the story page, and a beat written in the film (references/beats.md, \"A beat of your own\"; the kit's picture cards and layouts)",
+   "example": "cgnot996: the ambassador invitation (its own beat)",
+   "film": {
+    "beat": "beats/<name>.js",
+    "bars": 3
+   }
+  },
+  {
+   "id": "act2",
+   "group": "middle",
+   "kind": "story",
+   "label": {
+    "zh-Hant": "數字由頁面升起",
+    "zh-Hans": "数字从页面升起",
+    "en": "The number rises from the page"
+   },
+   "fits": {
+    "zh-Hant": "一篇帖嘅大數字（閱讀、播放、讚好），由頁面上原本嗰個位升起跳數；置頂帖最好",
+    "zh-Hans": "一篇帖子的大数字（阅读、播放、点赞），从页面上原来的位置升起跳数；置顶帖最好",
+    "en": "A post's big number (views, plays, likes) rises from its own spot on the page and counts up; a pinned post is best"
+   },
+   "needs": "a post on the page with a number, written the platform's way (304万 阅读, 6.5万 看过, 7,253 查看, 46K views)",
+   "example": "isnail: 304万 阅读, 6–12 s",
+   "film": {
+    "story": "act2"
+   },
+   "takes": {
+    "optional": ["post", "number"],
+    "note": "post: the post whose number rises (the point's first post by default); number: which of its numbers (views, likes…; the one matching the point's first number by default)"
+   },
+   "preview": "beats/previews/act2.jpg"
+  },
+  {
+   "id": "act3",
+   "group": "middle",
+   "kind": "story",
+   "label": {
+    "zh-Hant": "封面企起做牆",
+    "zh-Hans": "封面立起做墙",
+    "en": "The cover becomes a wall"
+   },
+   "fits": {
+    "zh-Hant": "一篇帖嘅封面企起做 3D 牆，大字逐件推出嚟，公仔爬上去：封面要有大字，仲要有位爬（一級矮台加三級錯開嘅盒，每級上面有公仔咁高嘅空位）",
+    "zh-Hans": "一篇帖的封面立起来变 3D 墙，大字逐件推出来，公仔爬上去：封面要有大字，还要有位置爬（一级矮台加三级错开的盒子，每级上方留出公仔那么高的空位）",
+    "en": "A post's cover stands up as a 3D wall, its big words pushing out piece by piece; the toy climbs it. The cover needs big lettering and room to climb: a low ledge and three boxes stepping up across it, each with the toy's height of clear space above"
+   },
+   "needs": "a post whose cover has big lettering and up to three claims or numbers to climb (pieces cut from it: references/cover-wall.md). Not for illustrations, photos or small text: pick another animation, or write one",
+   "example": "isnail: 自媒体很苦 / 46K粉, 12–24 s; cgnot996: 5天 380+ star",
+   "film": {
+    "story": "act3"
+   },
+   "takes": {
+    "optional": ["post"],
+    "note": "post: the post whose cover stands up (the point's first post by default)"
+   },
+   "preview": "beats/previews/act3.jpg"
+  },
+  {
+   "id": "count",
+   "group": "middle",
+   "kind": "beat",
+   "label": {
+    "zh-Hant": "數字跳升",
+    "zh-Hans": "数字跳升",
+    "en": "A number counts up"
+   },
+   "fits": {
+    "zh-Hant": "任何一個數字：粉絲里程碑、star、播放、日數。數字喺佢自己嘅舞台跳升、鎖定，公仔跳起慶祝",
+    "zh-Hans": "任何一个数字：粉丝里程碑、star、播放、天数。数字在自己的舞台上跳升、锁定，公仔跳起庆祝",
+    "en": "Any number: a follower milestone, stars, plays, days. It counts up on its own stage and locks; the toy jumps for joy"
+   },
+   "needs": "the number and its label, written the platform's way (10,000 关注者, 1,500 star)",
+   "example": "kingao (Kin): 50 → 10,000 粉丝; cgnot996: 1,500 star",
+   "film": {
+    "beat": "count",
+    "bars": 3,
+    "to": 10000,
+    "label": "关注者"
+   },
+   "takes": {
+    "required": ["to", "label"],
+    "optional": ["from", "unit", "sep", "decimals", "color", "em"]
+   },
+   "preview": "beats/previews/count.jpg"
+  },
+  {
+   "id": "calendar",
+   "group": "middle",
+   "kind": "beat",
+   "label": {
+    "zh-Hant": "日曆越翻越快",
+    "zh-Hans": "日历越翻越快",
+    "en": "A calendar flips"
+   },
+   "fits": {
+    "zh-Hant": "冇圖都得嘅想法：由某日到某日做到某件事。日曆越翻越快，數字跟住升，停低蓋印",
+    "zh-Hans": "没有图也行的想法：从某天到某天做到某件事。日历越翻越快，数字跟着升，停下盖章",
+    "en": "An idea with no picture: from one day to another they got somewhere. The pages fly faster, a count climbs beside them, a stamp lands"
+   },
+   "needs": "two dates; optionally a count (with their dated milestones in count.keys, so the number beside each date is one they had) and a stamp of one or two words",
+   "example": "cgnot996: 7月10日 → 10月24日, 10,000 关注者, 万粉",
+   "film": {
+    "beat": "calendar",
+    "bars": 4,
+    "from": "2026-07-10",
+    "to": "2026-10-24",
+    "count": {
+     "to": 10000,
+     "label": "关注者"
+    },
+    "stamp": "万粉"
+   },
+   "takes": {
+    "required": ["from", "to"],
+    "optional": ["count", "stamp"]
+   },
+   "preview": "beats/previews/calendar.jpg"
+  },
+  {
+   "id": "phrase",
+   "group": "middle",
+   "kind": "beat",
+   "label": {
+    "zh-Hant": "一句說話",
+    "zh-Hans": "一句话",
+    "en": "A line"
+   },
+   "fits": {
+    "zh-Hant": "佢嘅原話：自我介紹嗰句、金句、一篇帖嘅標題。字逐個由地下彈出，最後一個字落喺重拍",
+    "zh-Hans": "创作者的原话：自我介绍那句、金句、一篇帖子的标题。字逐个从地下弹出，最后一个字落在重拍",
+    "en": "Their own words: a bio line, a quote, a post's title. It rises a letter at a time, the last on a downbeat"
+   },
+   "needs": "the line, short (a 3-bar beat holds about nine characters)",
+   "example": "cgnot996: 马斯克得不到的男人",
+   "film": {
+    "beat": "phrase",
+    "bars": 3,
+    "text": "马斯克得不到的男人"
+   },
+   "takes": {
+    "required": ["text"],
+    "optional": ["color", "em", "early"]
+   },
+   "preview": "beats/previews/phrase.jpg"
+  },
+  {
+   "id": "endCard",
+   "group": "ending",
+   "kind": "story",
+   "label": {
+    "zh-Hant": "結尾卡：名同口號",
+    "zh-Hans": "结尾卡：名字和口号",
+    "en": "The end card: name and line"
+   },
+   "fits": {
+    "zh-Hant": "佢個名、帳號同一句口號貼喺撕紙上，公仔坐喺一件代表佢嘅道具上面",
+    "zh-Hans": "创作者的名字、账号和一句口号贴在撕纸上，公仔坐在一件代表创作者的道具上",
+    "en": "Their name, handle and a line slap down on torn paper; the toy rides a prop that stands for them"
+   },
+   "needs": "the line (one or two short parts) and the prop (references/props.md)",
+   "example": "isnail: 公众号变现 / 找蜗牛, the snail",
+   "film": {
+    "story": "endCard"
+   },
+   "preview": "beats/previews/endCard.jpg"
+  }
+ ]
+}

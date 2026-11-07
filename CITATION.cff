@@ -1,0 +1,13 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+title: "ChrisHKAI-Video"
+abstract: "Video skill for coding agents: paste a creator's X link, get a short film starring them as a 3D vinyl toy."
+authors:
+  - family-names: "Formuli"
+    given-names: "Abdullah"
+    email: "authrainmedia@gmail.com"
+url: "https://github.com/authrain-cloud-abdullahformuli/ChrisHKAI-Video"
+repository-code: "https://github.com/authrain-cloud-abdullahformuli/ChrisHKAI-Video"
+license: "MIT"
+version: "0.7.0"
+date-released: "2026-11-06"

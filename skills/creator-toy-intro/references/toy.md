@@ -1,0 +1,174 @@
+# Step 3: the toy
+
+Build the creator as a smooth vinyl toy from the picture(s) the user
+confirmed in step 2 (film.json `toyFrom`; never anything else), show its
+turnaround beside them, and change it from the user's words until they say
+it is right.
+
+## The toy line
+
+Every toy belongs to one line in its finish, whatever it is made of:
+
+- smooth designer vinyl; soft coat, no photo textures, no real fabric or
+  hair strands (a toy, never a likeness pasted on);
+- the finish of the isnail mascot is the bar: full, solid, polished;
+- the likeness first: the shape the original is known by, then the face
+  (hair shape, glasses, the smile, a mark), then two or three colours that
+  say who it is;
+- about 90 to 120 mm tall (`height`, metres); origin at the bottom on the
+  floor, +y up, the face towards +z, the toy's right (R) at −x.
+
+## The body follows the original
+
+The toy has the body its original has, no more, no less (toy.json `body`):
+
+| the original | `body` | the toy |
+| --- | --- | --- |
+| a person, a chibi, a mascot drawn with arms and legs | `person` | about three heads tall, mitten hands, its own legs |
+| an animal | `animal` | its own body: four paws, a tail, ears, as the picture has them |
+| a fruit, a ball, a logo, an object, a face drawn with no limbs | `object` | its own shape alone: no arms, no legs. A lemon is a lemon with a face (`characters/lemon/`). |
+
+Never add a limb the original does not have, and never leave out one it has.
+Something in between (a mascot with stubby feet and no arms) gets exactly
+what it shows. When the picture leaves it open, show the user both and let
+them pick.
+
+A toy without arms plays the same story with its whole body (the rig does
+it, engine/lib/rig.js): where the story points, it leans towards what it
+points at; a wave tips and wobbles it; a cheer is a lean back. A toy without
+legs still hops: the hops, squashes and landings are the body's. If a move
+of the story still reads wrong on this toy, write the toy's own move into the
+film (a spin, a roll, a bounce: a beat or the film's own copy of that piece)
+rather than giving it limbs.
+
+## Three kits
+
+Pick from the picture; parts of one kit may sit on another's toy.
+
+| the picture shows | kit | how it is made |
+| --- | --- | --- |
+| a mascot, a logo, a drawn character, an object | parts | toy.json lists rounded boxes, balls, blobs, arcs: the isnail mascot; a lemon is one blob, a leaf and a face |
+| a pet or another animal | pet | toy.json adds blobs (superellipsoids), tubes (tails, whiskers, eyelids), loops and plates (glasses), and markings painted on in soft blobs |
+| a real person, a chibi drawing | sculpt | a sculpt script shapes signed distance fields (`engine/lib/sdf.py`), meshes them and paints them per vertex; `import-sculpt.py` brings them in |
+| nothing that can be a character | — | offer two or three mascot ideas from the name or brand, and build the one picked |
+
+Start from the nearest toy in `characters/` (the isnail mascot, a calico
+cat, Tim and Steve Jobs in one simpler toy line, Chris as a sculpt):
+copy its toy.json or its source and change it, rather than from nothing.
+
+### toy.json (parts and pet kits)
+
+```json
+{ "name": "…", "kit": "pet", "height": 0.094, "center": [0, 0.042, 0],
+  "colors": { "white": "#F6F2EA", "orange": "#E8903A" },
+  "finish": { "white": "soft", "line": "gloss" },
+  "joints": { "body": { "p": [0, 0.014, 0], "parent": null }, "head": { "p": [0, 0.038, 0.002], "parent": "body" } },
+  "parts": [
+    { "name": "head", "shape": "blob", "r": [0.032, 0.024, 0.025], "p": 2.6, "taper": -0.08, "pos": [0, 0.058, 0.001], "mat": "white", "group": "head",
+      "paint": [{ "mat": "orange", "blobs": [{ "c": [0.015, 0.009, 0.009], "r": [0.018, 0.0125, 0.021] }], "soft": 0.035, "noise": 0.22 }] }
+  ] }
+```
+
+Shapes: `roundBox` (size, radius), `ellipsoid` (r), `arc` (radius, tube,
+arc), `blob` (r, p: 2 round … 3 boxy, taper < 0 narrows the top), `tube` (pts,
+radii: through the points, round ends), `prism` (sides, r, depth, bevel),
+`loop` (pts, radii: a closed tube; rims, collars), `plate` (w, d, t, corner,
+bevel, or an `outline` of (x, z) points; lenses, watch faces). `pos` and
+`rot` (Euler XYZ) or `q` (a quaternion [x, y, z, w]) place a part; paint
+blobs sit in the part's own space (before its `pos` and turn). Finishes:
+`vinyl` (default), `soft` (light under the surface: white, skin), `matte`,
+`gloss` (eyes, lines, noses, frames), `satin`, `metal`, `glass` (clear
+lenses), `blackGlass` (a watch face), `emit` (a glint), `lens` (glowing
+lenses). A joint may carry `t` and `s`, a nudge and a scale kept for good
+(the Tim line's big head).
+
+### The sculpt kit
+
+The sculpt script writes a folder: a manifest (`units`, `facing` "-y" for
+Blender's axes, `height_mm`, `parts` [{ name, file, bone, material,
+frame? }], `bones` [{ name, head, tail, parent }], `variants`) and one `.npz`
+per part (verts in metres, faces, normals, `color` sRGB 0–1, `rough`), plus
+an `eye.png` painted over the eye pieces if the eyes are painted. Name the
+bones `hips`, `spine`, `head`, `brow.R/L`, `upper_arm.R/L`, `forearm.R/L`,
+`hand.R/L`, `thigh.R/L`, `foot.R/L` and the rig contract follows by itself
+(`--map` for others). Materials become finishes: `skin`, `lens` and `pad` →
+glass, `eye`, `frame` and `teeth` → gloss, the rest vinyl.
+
+```bash
+FILM=<film> python3 <skill>/engine/scripts/import-sculpt.py <sculpt folder> --manifest <name>.json
+```
+
+Mesh at about 0.4 mm voxels while shaping (seconds), 0.25 mm for the film.
+
+## The signature move
+
+Right after it lands, and again on the end card's prop, the toy does its own
+move (toy.json `signature`): `{ "move": "glasses", "at": [x, y, z] }` puts
+its left fingers to its glasses at that point (mm, toy space: the hinge of
+the frame), anything else a wave of the left arm, a cat's raised paw. Without
+the field it waves (an `object` toy wobbles to its side). `import-sculpt.py`
+and `characters/build.mjs` find the hinge of a toy's glasses by themselves.
+The move should be the creator's own: what they do in their pictures, their
+catchphrase as a gesture. When none of these fits, write it: a film's own
+move goes in the film's code (references/beats.md, "A beat of your own").
+
+## The rig contract
+
+The story poses these joints; a toy has only the ones its body has:
+`body`; `head` (`parent` body); `armR`, `armL` (body; a pet's front legs);
+`legR`, `legL` (no parent; a pet's hind legs); optional `ears` (head; both
+ears), `finger` / `fingerL` (on the arm: grows when the toy points). An
+`object` toy has `body` and `head` alone (the head: what turns to look, the
+top of a lemon, a logo's face). Any other joint (a tail, a leaf) keeps its
+rest pose under its parent. Parts whose name starts with `sleeve` stretch
+when an arm reaches. A part with no `pos` sits at the toy's origin (a tube's
+points already say where it goes).
+
+## The checkpoint
+
+```bash
+FILM=<film> node <skill>/engine/run.mjs hero lookdev
+```
+
+renders five views (front, three-quarter pointing, side, back cheering, the
+face), framed by the toy's height, and `build/lookdev/compare.jpg`: the
+confirmed picture(s) beside them. They are lit as the film lights the toy
+(`engine/lib/look.py`, film.json `"look"`, references/render.md "The
+light"), so what the user approves here is what the film shows. The back
+view keeps the rim on the toy's back, so the back of the head and the hood
+can be seen. A dark toy is shown on the mid-tone stage its film will play on
+(references/render.md, "The light"). Before the views, it checks that the
+toy is in one piece (below). Look at it first yourself: likeness,
+proportions, nothing floating or sunk, the colours. Then show the user and
+change it from their words, a round at a time (about a minute each). Once
+they say it is right, keep a copy for the next film:
+`~/.chrishkai-video/characters/<handle>-<what it is>/` (toy.json, and
+`build/toy/` for a sculpt), and move film.json `step` on to `story`.
+
+A creator who has a toy already (a folder of theirs there, which `next`
+names): start from it, copy it into the film, and run the look-dev. Show it
+to the user all the same, a round like any other: their picture may have
+changed, and this film's story may ask for something of the toy.
+
+### In one piece
+
+A vinyl toy's parts are glued together. Before it renders, the look-dev checks
+the toy at rest, pointing and cheering, and writes `build/toy-parts.json`.
+`-- --parts` runs the check alone, in seconds, without the views. It finds
+three things, and `check` repeats them:
+
+- **floating**: a part, or a few together, that touches nothing of the rest.
+  It might be an eye in front of the face or a hat above the head. Or it is
+  an arm that comes off the shoulder only when it turns: then its joint `p`
+  is not where the arm meets the body. Move the part or the joint until it
+  touches. A part meant to stand apart (a halo, a spark, a prop held off the
+  hand) says `"apart": true`.
+- **hidden**: a part inside the others in every pose, never seen (an eye sunk
+  into the head). Bring it out, or drop it if it was only filling. Glass does
+  not hide what is behind it.
+- **coincide**: two parts of different colours or finishes whose surfaces lie
+  on each other, facing the same way. The render speckles where they meet. Sink one a little into the other,
+  lift it clear, or keep one of the two.
+
+The check does not judge size: whether the eyes are too big or the head too
+small is for the eye, against the picture (compare.jpg).
